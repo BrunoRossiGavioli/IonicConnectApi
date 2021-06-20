@@ -1,5 +1,7 @@
 import { Component } from '@angular/core';
 import { AlertController } from '@ionic/angular';
+import { Produto } from '../Model/produto';
+import { ProdServiceService } from '../Services/prod-service.service';
 
 @Component({
   selector: 'app-home',
@@ -10,8 +12,8 @@ export class HomePage {
 
   produtos: any[] = [];
 
-  constructor(public ac : AlertController) {
-    this.CarregarLista();
+  constructor(public ac : AlertController, private prodApi: ProdServiceService) {
+    this.CarregarApi();
   }
 
   async MostrarAdd(){
@@ -45,23 +47,18 @@ export class HomePage {
     await alert.present();
   }
 
-  async Add(task: string){
-    let prod = {name: task.toUpperCase(), marcado: false};
-    this.produtos.push(prod);
-    this.AtualizarEstoque();
+  async Add(prodNome: string){
+    let prod = new Produto;
+    prod.nome = prodNome;
+    prod.active = false;
+
+    this.prodApi.post(prod);
+    window.location.reload();
   }
 
-  Remover(task: object){
+  Remover(task: any){
+    this.prodApi.delete(task.id);
     this.produtos = this.produtos.filter((prodArray) => prodArray != task);
-    this.AtualizarEstoque();
-  }
-
-  CarregarLista(){
-    let task = localStorage.getItem('tarefaDb');
-    if(task){
-      this.produtos = JSON.parse(task);
-      console.log(task);
-    }
   }
 
   Checar(task){
@@ -70,10 +67,16 @@ export class HomePage {
     else
     task.marcado = false;
 
-    this.AtualizarEstoque();
+    this.prodApi.put(task.id, task)
   }
 
-  AtualizarEstoque(){
-    localStorage.setItem('tarefaDb', JSON.stringify(this.produtos));
+  CarregarApi(){
+    this.prodApi.getAll()
+    .then((json) => {
+      this.produtos = <Produto[]>json;
+    })
+    .catch((erro) => {
+      console.log("API INDISPONIVEL!"+erro);
+    })
   }
 }
